@@ -1,6 +1,6 @@
 #Facebook Likes Recommender
 
-**Note: This repository does not contain the data files. These have to be requested directly**
+**Note: This repository does not contain the data files. These have to be requested separatly.**
 
 To start the webserver run:
 ```bash
