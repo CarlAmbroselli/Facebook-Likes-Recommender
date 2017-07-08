@@ -36,6 +36,12 @@ def similar_items(id=6478112671):
     print(model_id)
     return [(int(model_id_to_like_id(x)), float(y)) for x, y in model.similar_items(model_id)]
 
+def search(text):
+    return mapping_data[mapping_data['name'].str.contains(text, na=False)]
+    # return mapping_data[mapping_data['name'].str.contains(text) | mapping_data['category'].str.contains(text)
+    #                     | mapping_data['category_list'].str.contains(text)
+    #                     | mapping_data['genre'].str.contains(text)]
+
 def like_ids():
     like_objects = dict(enumerate(data['like'].cat.categories))
     like_ids = [int(value) for key, value in like_objects.items()]

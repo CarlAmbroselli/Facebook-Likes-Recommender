@@ -1,9 +1,11 @@
 from flask import Flask, jsonify, request
 from prediction import *
+from flask_cors import CORS, cross_origin
 import math
 import code
 
 app = Flask(__name__, static_url_path='/static')
+CORS(app)
 
 @app.route('/')
 def root():
@@ -28,6 +30,10 @@ def get_likes():
 @app.route('/details/<id>', methods=['GET'])
 def get_details(id):
     return like_id_to_item(int(id)).to_json()
+
+@app.route('/search/<text>', methods=['GET'])
+def search_data(text):
+    return search(text).sort_values('talking_about_count', ascending=False).head(20).to_json(orient='records')
 
 @app.route('/similar/<id>', methods=['GET'])
 def get_similar(id):

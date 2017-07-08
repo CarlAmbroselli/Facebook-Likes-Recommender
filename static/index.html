@@ -165,7 +165,18 @@
 		<script src="http://code.jquery.com/jquery-latest.min.js"></script>
 		<script type="text/javascript">
 			jQuery(function(){
-				
+				jQuery.ajax({
+				    url: "http://127.0.0.1:5000/search/Slipknot",
+				    type: "GET",
+				})
+				.done(function(data, textStatus, jqXHR) {
+				    console.log("HTTP Request Succeeded: " + jqXHR.status);
+				    console.log(JSON.parse(data));
+				})
+				.fail(function(jqXHR, textStatus, errorThrown) {
+				    console.log("HTTP Request Failed");
+				})
+
 			});
 		</script>
 	</body>
