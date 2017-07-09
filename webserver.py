@@ -20,7 +20,7 @@ def do_recommendation():
         )
     results = text_recommendation(data['likes'])
     return jsonify(
-        recommendation=[{'value': x[0], 'score' :x[1]} for x in results if str(x[0]) != 'nan']
+        recommendation=[{'value': x[0].to_json(orient='records'), 'score' :x[1]} for x in results if str(x[0].iloc[0]['name']) != 'nan']
     )
 
 @app.route('/likes', methods=['GET'])

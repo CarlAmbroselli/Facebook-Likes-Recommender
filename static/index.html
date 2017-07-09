@@ -10,6 +10,10 @@
 		<!-- Fonts -->
 		<link href="https://fonts.googleapis.com/css?family=Noto+Sans:400,700" rel="stylesheet">
 
+		<!-- Loading -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+
 		<!-- CSS -->
 		<style type="text/css">
 			body {
@@ -83,9 +87,12 @@
 				position: relative;
 				display: inline-block;
 				margin-right: 25px;
+				margin-bottom: 25px;
+				background-color: #f4faff;
 			}
 
-			.element h2{
+			.element h2 {
+				position: absolute;
 				color: #242424;
 				font-weight: 800;
 				font-size: 18px;
@@ -94,8 +101,8 @@
 
 			.element .bottom {
 				position: absolute;
-			    bottom: 0;
-			    left: 0;
+		    bottom: 0;
+		    left: 0;
 				margin: 20px;
 				padding: 0;
 			}
@@ -130,54 +137,121 @@
 
 			<div class="results">
 			<h3>Search:</h3>
-				<div class="element">
-					<h2>Hi! Welcome to Hollister</h2>
-					<span class="bottom"> 
-						<p class="category">Community</p>
-						<p class="likes"><span>242133</span> Likes</p>
-					</span>
-					<img class="like-button" src="images/heart.png"/>
-				</div>
+				<p id="searchLoading">Loading...</div>
+				<div class="result-elements"></div>
 
-				<div class="element">
-					<h2>Hi! Welcome to Hollister</h2>
-					<span class="bottom"> 
-						<p class="category">Community</p>
-						<p class="likes"><span>242133</span> Likes</p>
-					</span>
-					<img class="like-button" src="images/heart.png"/>
-				</div>
-
-				<div class="element">
-					<h2>Hi! Welcome to Hollister</h2>
-					<span class="bottom"> 
-						<p class="category">Community</p>
-						<p class="likes"><span>242133</span> Likes</p>
-					</span>
-					<img class="like-button" src="images/heart.png"/>
-				</div>
+				<div class="spacer"></div>
+				<h3>Your Likes:</h3>
+				<div class="result-likes"></div>
 
 				<div class="spacer"></div>
 				<h3>Recommendations:</h3>
+				<div class="result-recommendations"></div>
 			</div>
 		</content>
 
 		<script src="http://code.jquery.com/jquery-latest.min.js"></script>
 		<script type="text/javascript">
+
+		likes = []
+		base_url = 'http://127.0.0.1:5000'
+
+		function like(id) {
+			console.log("Liked " + id)
+			likes.push(id)
+
+			$('#like-' + id).appendTo( ".result-likes" );
+			NProgress.start()
+			jQuery.ajax({
+			    url: base_url + "/recommend",
+			    type: "POST",
+			    headers: {
+			        "Content-Type": "application/json; charset=utf-8",
+			    },
+			    contentType: "application/json",
+			    data: JSON.stringify({
+			        "likes": likes
+			    })
+			})
+			.done(function(data, textStatus, jqXHR) {
+				$('.result-recommendations').html('');
+			    console.log("HTTP Request Succeeded: " + jqXHR.status);
+			    console.log(data);
+			    NProgress.done()
+			    data.recommendation.map(function(recommendation) {
+			    	element = JSON.parse(recommendation.value)[0]
+			    	$( ".result-recommendations" ).append( 
+		    		"<div class=\"element\"> 															 \
+							<h2>" + element.name + "</h2>										 		 \
+							<span class=\"bottom\"> 														 \
+								<p class=\"category\">" + element.category + "</p> \
+								<p class=\"likes\"><span>" + element.talking_about_count + "</span> Likes</p>" 
+							+ "</span></div>" )
+
+			    })
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+			    console.log("HTTP Request Failed");
+			    NProgress.done()
+			})
+
+		}
+		function search(value) {
+			NProgress.start()
+			$('.result-elements').html('');
+			$('#searchLoading').show()
+			updateInterval = setInterval(function() { 
+				NProgress.inc() 
+			}, 2500)
 			jQuery(function(){
 				jQuery.ajax({
-				    url: "http://127.0.0.1:5000/search/Slipknot",
+				    url: base_url + "/search/" + value,
 				    type: "GET",
 				})
 				.done(function(data, textStatus, jqXHR) {
-				    console.log("HTTP Request Succeeded: " + jqXHR.status);
-				    console.log(JSON.parse(data));
+					// console.log(data)
+			    console.log("HTTP Request Succeeded: " + jqXHR.status);
+			    clearInterval(updateInterval)
+			    NProgress.done()
+			    $('#searchLoading').hide()
+			    try {
+			    	JSON.parse(data).map(function(element) {
+			    		$( ".result-elements" ).append( 
+			    		"<div class=\"element\" id=\"like-" + element.like_id + "\"> 															 \
+								<h2>" + element.name + "</h2>										 		 \
+								<span class=\"bottom\"> 														 \
+									<p class=\"category\">" + element.category + "</p> \
+									<p class=\"likes\"><span>" + element.talking_about_count + "</span> Likes</p>" 
+								+ "</span>"
+								+ "<img onclick=\"like(" + element.like_id + ")\" class=\"like-button\" src=\"static/images/heart.png\"/>\
+							</div>" )
+			    	});
+			    } catch (e) {
+			    	console.error("Error retrieving likes.")
+			    }
 				})
 				.fail(function(jqXHR, textStatus, errorThrown) {
 				    console.log("HTTP Request Failed");
+				    clearInterval(updateInterval)
+				    NProgress.done()
+				    $('#searchLoading').hide()
 				})
 
 			});
+		}
+
+		var timer, delay = 500;
+		$('.search').bind('keydown blur change', function(e) {
+		    var _this = $(this);
+		    clearTimeout(timer);
+		    timer = setTimeout(function() {
+		        search($('.search').val());
+		    }, delay );
+		});
+
+		searchValue = 'Slipknot'
+		$('.search').val(searchValue);
+		search(searchValue)
 		</script>
 	</body>
 </html>

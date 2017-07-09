@@ -8,7 +8,10 @@ import code
 
 
 def load_data(nrows=5000):
-    like_data = pd.read_csv('./data/user-likes-sorted-clean.csv', sep=',', header=None, nrows=nrows)
+    if nrows == -1:
+        like_data = pd.read_csv('./data/user-likes-sorted-clean.csv', sep=',', header=None)
+    else:
+        like_data = pd.read_csv('./data/user-likes-sorted-clean.csv', sep=',', header=None, nrows=nrows)
     data = pd.DataFrame()
     data['user'] = like_data[0].astype("category")
     data['like'] = like_data[1].astype("category")
@@ -79,10 +82,10 @@ def perform_recommendation(likes):
     return model.recommend(userid=0, user_items=user_likes(likes), recalculate_user=True)
 
 def text_recommendation(likes):
-    return list(map(lambda x: (model_id_to_name(x[0]), int(round(x[1]*1000))/1000), perform_recommendation(likes)))
+    return list(map(lambda x: (like_id_to_item(model_id_to_like_id(x[0])), int(round(x[1]*1000))/1000), perform_recommendation(likes)))
 
 confidence = 40
-data = load_data(5000)
+data = load_data(500000)
 model = learn()
 mapping_data = load_mapping()
 
