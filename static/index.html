@@ -241,7 +241,7 @@
 		}
 
 		var timer, delay = 500;
-		$('.search').bind('keydown blur change', function(e) {
+		$('.search').bind('change', function(e) {
 		    var _this = $(this);
 		    clearTimeout(timer);
 		    timer = setTimeout(function() {
