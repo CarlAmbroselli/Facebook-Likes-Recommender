@@ -41,6 +41,6 @@ def get_similar(id):
         similar=similar_items(int(id))
     )
 
-app.run(debug=True)
+app.run(debug=True, port=5555)
 # Run interactive shell afterwards
 # code.interact(local=locals())

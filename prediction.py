@@ -85,7 +85,7 @@ def text_recommendation(likes):
     return list(map(lambda x: (like_id_to_item(model_id_to_like_id(x[0])), int(round(x[1]*1000))/1000), perform_recommendation(likes)))
 
 confidence = 40
-data = load_data(500000)
+data = load_data(50000)
 model = learn()
 mapping_data = load_mapping()
 
