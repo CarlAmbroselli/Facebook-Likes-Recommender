@@ -25,14 +25,20 @@ def learn():
     likes = coo_matrix((np.ones(data.shape[0]),
                    (data['like'].cat.codes.copy(),
                     data['user'].cat.codes.copy())))
-    
+
+    likes = np.multiply(likes.todense(), np.ones((likes.shape[0], likes.shape[1]))*40)
+    likes = coo_matrix(likes)
+
     # train model
-    model = implicit.als.AlternatingLeastSquares(factors=50)
+    model = implicit.als.AlternatingLeastSquares(factors=100)
 
     # Change to multiplication by inverse logarithm of like count
-    model.fit(confidence * likes)
+    model.fit(likes)
     
     return model
+
+def explain(id, likes):
+    return model.explain(userid=0, user_items=user_likes(likes), itemid=like_id_to_model_id(id))
 
 def similar_items(id=6478112671):
     model_id = like_id_to_model_id(id)
@@ -85,7 +91,7 @@ def text_recommendation(likes):
     return list(map(lambda x: (like_id_to_item(model_id_to_like_id(x[0])), int(round(x[1]*1000))/1000), perform_recommendation(likes)))
 
 confidence = 40
-data = load_data(50000)
+data = load_data(500)
 model = learn()
 mapping_data = load_mapping()
 

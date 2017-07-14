@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from json import load
 from prediction import *
 from flask_cors import CORS, cross_origin
 import math
@@ -20,7 +21,7 @@ def do_recommendation():
         )
     results = text_recommendation(data['likes'])
     return jsonify(
-        recommendation=[{'value': x[0].to_json(orient='records'), 'score' :x[1]} for x in results if str(x[0].iloc[0]['name']) != 'nan']
+        recommendation=[{'value': load(x[0].to_json(orient='records')), 'score' :x[1]} for x in results if str(x[0].iloc[0]['name']) != 'nan']
     )
 
 @app.route('/likes', methods=['GET'])
@@ -35,12 +36,25 @@ def get_details(id):
 def search_data(text):
     return search(text).sort_values('talking_about_count', ascending=False).head(20).to_json(orient='records')
 
+@app.route('/explain', methods=['POST'])
+def get_explain():
+    data = request.get_json(silent=True)
+    if not 'likes' in data or not 'id' in data:
+        return jsonify(
+            error="Please send like ids via JSON like: { id: 132, likes: [24382, 15489] }"
+        )
+    result = explain(data['id'], data['likes'])
+    print(result[1])
+    return jsonify(
+        total_score=float(result[0]),
+        top_contributions=[{'like_id': int(model_id_to_like_id(x[0])), 'contribution': float(x[1])} for x in result[1]]
+    )
 @app.route('/similar/<id>', methods=['GET'])
 def get_similar(id):
     return jsonify(
         similar=similar_items(int(id))
     )
 
-app.run(debug=True, port=5555)
+app.run(debug=True, port=5000)
 # Run interactive shell afterwards
 # code.interact(local=locals())
