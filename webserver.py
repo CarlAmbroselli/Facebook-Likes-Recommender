@@ -66,4 +66,4 @@ def get_similar(id):
 
 app.run(debug=True, port=5000)
 # Run interactive shell afterwards
-# code.interact(local=locals())
+code.interact(local=locals())

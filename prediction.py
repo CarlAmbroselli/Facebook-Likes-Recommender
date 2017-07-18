@@ -17,9 +17,67 @@ def load_data(nrows=5000):
     data['like'] = like_data[1].astype("category")
     return data
 
+def load_test_data(nrows=5496):
+    full_file_len = 95045419 #take only the last nrows rows
+    skiprows = full_file_len-nrows
+    like_data = pd.read_csv('./data/user-likes-sorted-clean.csv', sep=',', header=None, nrows=nrows, skiprows=skiprows)
+    t_data = pd.DataFrame()
+    t_data['user'] = like_data[0].astype("category")
+    t_data['like'] = like_data[1].astype("category")
+    return t_data
+
 def load_mapping():
     mapping_data = pd.read_csv('./data/mapping.csv', sep=',')
     return mapping_data
+
+def run_test_one_vs_all():
+    grouped = test_data.groupby('user')
+    test_results = []
+    progress = 0
+    max_progress = len(grouped)
+    for name, group in grouped:
+        likes = group['like'].values
+        user_results = []
+        for index in range(min(10, len(likes))):
+            filtered_likes = np.concatenate((np.array(likes)[:index], np.array(likes)[index + 1:]))
+            search_like = likes[index]
+            # print("Calculate", index, search_like, "using # likes:", len(filtered_likes))
+            result = explain(search_like, filtered_likes)
+            # print("Result", result[0])
+            user_results.append(result[0])
+        test_results.append(np.average(user_results))
+        progress += 1
+        if (progress % 10 == 0):
+            print("Progress: ", progress, "/", max_progress)
+            print("Current result:", np.average(test_results))
+    return np.average(test_results)
+
+def run_test_fast():
+    grouped = test_data.groupby('user')
+    test_results = []
+    # progress = 0
+    # max_progress = len(grouped)
+    for name, group in grouped:
+        likes = group['like'].values
+        user_results = []
+        if (len(likes) > 100):
+            # print("Test user", len(likes))
+            filtered_likes = np.array(likes)[11:]
+            search_likes = likes[:10]
+            user_weights = None
+            for index in range(10):
+                # print("Calculate", index, search_like, "using # likes:", len(filtered_likes))
+                result = explain(search_likes[index], filtered_likes, user_weights=user_weights)
+                user_weights = result[2]
+                # print("Result", result[0])
+                user_results.append(result[0])
+            test_results.append(np.average(user_results))
+        # progress += 1
+        # if (progress % 10 == 0):
+        #     print("Progress: ", progress, "/", max_progress)
+        #     print("Current result:", np.average(test_results))
+    return np.average(test_results)
+
 
 def learn():
     likes = coo_matrix((np.ones(data.shape[0]),
@@ -37,8 +95,8 @@ def learn():
     
     return model
 
-def explain(id, likes):
-    return model.explain(userid=0, user_items=user_likes(likes), itemid=like_id_to_model_id(id))
+def explain(id, likes, user_weights=None):
+    return model.explain(userid=0, user_items=user_likes(likes), itemid=like_id_to_model_id(id), user_weights=user_weights)
 
 def similar_items(id=6478112671):
     model_id = like_id_to_model_id(id)
@@ -96,8 +154,36 @@ def perform_recommendation(likes):
 def text_recommendation(likes):
     return list(map(lambda x: (like_id_to_item(model_id_to_like_id(x[0])), int(round(x[1]*1000))/1000), perform_recommendation(likes)))
 
+def test(training_size=5000, test_size=5496):
+    global data
+    global test_data
+    global model
+    data = load_data(training_size)
+    # test_data = load_test_data(test_size)
+    model = learn()
+    test_result = run_test_fast()
+    f = open('results.txt', 'a')
+    f.write("Test for training size: " + str(training_size) +
+          "\tTest size: " + str(test_size) +
+          "\tResult: " + str(test_result) + '\n')
+    f.close()
+    print("Test for training size:", training_size,
+          "Test size:", test_size,
+          "Result:", test_result)
+    return test_result
+
+def test_loop():
+    i = 1024
+    test_size = 5496
+    global test_data
+    test_data = load_test_data(test_size)
+    while i < 2 ** 27:
+        test(training_size=i)
+        i *= 2
+
 confidence = 40
-data = load_data(50000)
+data = load_data(5000)
+test_data = load_test_data(1000)
 model = learn()
 like_counts = data['like'].value_counts()
 # print(like_counts.head())
@@ -109,3 +195,4 @@ mapping_data = load_mapping()
 # recommendation = text_recommendation([24382, 15489])
 # print(recommendation)
 
+code.interact(local=locals())
