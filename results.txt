@@ -1,3 +1,6 @@
 Test for training size: 1024	Test size: 5496	Result: 0.0528364611723
 Test for training size: 2048	Test size: 5496	Result: 0.107774748509
 Test for training size: 4096	Test size: 5496	Result: 0.137465224537
+Test for training size: 8192	Test size: 5496	Result: 0.178388908772
+Test for training size: 16384	Test size: 5496	Result: 0.172512172635
+Test for training size: 32768	Test size: 5496	Result: 0.168753217273

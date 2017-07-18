@@ -195,4 +195,4 @@ mapping_data = load_mapping()
 # recommendation = text_recommendation([24382, 15489])
 # print(recommendation)
 
-code.interact(local=locals())
+# code.interact(local=locals())
