@@ -21,7 +21,7 @@ def do_recommendation():
         )
     results = text_recommendation(data['likes'])
     return jsonify(
-        recommendation=[{'value': load(x[0].to_json(orient='records')), 'score' :x[1]} for x in results if str(x[0].iloc[0]['name']) != 'nan']
+        recommendation=[{'value': x[0].to_json(orient='records'), 'score' :x[1]} for x in results if str(x[0].iloc[0]['name']) != 'nan']
     )
 
 @app.route('/likes', methods=['GET'])
@@ -30,11 +30,16 @@ def get_likes():
 
 @app.route('/details/<id>', methods=['GET'])
 def get_details(id):
-    return like_id_to_item(int(id)).to_json()
+    item = like_id_to_item(int(id))
+    item.dataset_like_count = likes_count(item.like_id)
+    return item.to_json()
 
 @app.route('/search/<text>', methods=['GET'])
 def search_data(text):
-    return search(text).sort_values('talking_about_count', ascending=False).head(20).to_json(orient='records')
+    result = search(text)
+    result['like_count'] = result['like_id'].apply(lambda x: likes_count(x))
+    result = result.sort_values(['like_count', 'talking_about_count'], ascending=False).head(20)
+    return result.to_json(orient='records')
 
 @app.route('/explain', methods=['POST'])
 def get_explain():
@@ -47,7 +52,11 @@ def get_explain():
     print(result[1])
     return jsonify(
         total_score=float(result[0]),
-        top_contributions=[{'like_id': int(model_id_to_like_id(x[0])), 'contribution': float(x[1])} for x in result[1]]
+        top_contributions=[{
+            'like_id': int(model_id_to_like_id(x[0])),
+            'contribution': float(x[1]),
+            'element': like_id_to_item(int(model_id_to_like_id(x[0]))).to_json(orient='records')
+        } for x in result[1]]
     )
 @app.route('/similar/<id>', methods=['GET'])
 def get_similar(id):

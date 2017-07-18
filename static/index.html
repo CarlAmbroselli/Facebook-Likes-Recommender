@@ -11,8 +11,8 @@
 		<link href="https://fonts.googleapis.com/css?family=Noto+Sans:400,700" rel="stylesheet">
 
 		<!-- Loading -->
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" />
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+		<link rel="stylesheet" href="css/nprogress.min.css" />
+		<script src="js/nprogress.min.js"></script>
 
 		<!-- CSS -->
 		<style type="text/css">
@@ -123,6 +123,35 @@
 				bottom: 22px;
 			}
 
+			.overlay {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				background-color: rgba(0,0,0,0.8);
+			}
+
+			.overlay-box {
+				position: fixed;
+				top: 50%;
+				left: 50%;
+				transform: translate3d(-50%, -50%, 0);
+				width: 700px;
+				min-height: 200px;
+				background-color: #eeeeee;
+				border-radius: 8px;
+				padding: 20px;
+			}
+
+			.result-recommendations .element {
+				cursor: pointer;
+			}
+
+			.explain-elements h4, .result-recommendations h4 {
+				margin: 60px 10px 0;
+			}
+
 		</style>
 	</head>
 	<body>
@@ -150,11 +179,71 @@
 			</div>
 		</content>
 
-		<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+		<div class="overlay" onclick="hideOverlay()">
+			<div class="overlay-box">
+			<h3>We did the recommendation based on your following likes:</h3>
+
+			<h4 id="explain-score"></h4>
+			<div class="explain-elements"></div>
+
+			</div>
+		</div>
+
+		<script src="js/jquery.min.js"></script>
 		<script type="text/javascript">
 
+		function hideOverlay() {
+			$('.overlay').hide()
+		}
+
+		function showOverlay() {
+			$('.overlay').show()
+		}
+
+		hideOverlay()
 		likes = []
 		base_url = 'http://127.0.0.1:5000'
+
+		function explain(id) {
+			console.log("explain:")
+			showOverlay()
+			jQuery.ajax({
+			    url: base_url + "/explain",
+			    type: "POST",
+			    headers: {
+			        "Content-Type": "application/json; charset=utf-8",
+			    },
+			    contentType: "application/json",
+			    data: JSON.stringify({
+			        "likes": likes,
+			        "id": parseInt(id)
+			    })
+			})
+			.done(function(data, textStatus, jqXHR) {
+			    console.log("HTTP Request Succeeded: " + jqXHR.status);
+			    console.log(data);
+			    $('#explain-score').innerText = 'Score: ' + data.total_score
+
+			    data.top_contributions.sort(function(a, b) { 
+			    	return a.contribution < b.contribution
+			    })
+			    $( ".explain-elements" ).html('')
+			    data.top_contributions.map(function(contribution) {
+			    	element = JSON.parse(contribution.element)[0]
+			    	contribution = Math.round(contribution.contribution*100) / 100
+			    	$( ".explain-elements" ).append( 
+		    		"<div class=\"element\" likeval=\"" + contribution.like_id + "\"> 															 \
+							<h2>" + element.name + "</h2>										 		 \
+							<h4>Contribution: " + contribution + "</h4>										 		 \
+							<span class=\"bottom\"> 														 \
+								<p class=\"category\">" + element.category + "</p> \
+								<p class=\"likes\"><span>" + element.talking_about_count + "</span> Likes</p>" 
+							+ "</span></div>" )
+
+			    })
+
+			})
+		}
 
 		function like(id) {
 			console.log("Liked " + id)
@@ -181,14 +270,20 @@
 			    data.recommendation.map(function(recommendation) {
 			    	element = JSON.parse(recommendation.value)[0]
 			    	$( ".result-recommendations" ).append( 
-		    		"<div class=\"element\"> 															 \
+		    		"<div class=\"element\" likeval=\"" + element.like_id + "\"> 															 \
 							<h2>" + element.name + "</h2>										 		 \
+							<h4>Score: " + recommendation.score + "</h4>										 		 \
 							<span class=\"bottom\"> 														 \
 								<p class=\"category\">" + element.category + "</p> \
 								<p class=\"likes\"><span>" + element.talking_about_count + "</span> Likes</p>" 
 							+ "</span></div>" )
 
 			    })
+			    $( ".result-recommendations .element" ).click(function() {
+			    	likeValue = $(this).attr("likeval")
+			    	explain(likeValue)
+			    })
+
 			})
 			.fail(function(jqXHR, textStatus, errorThrown) {
 			    console.log("HTTP Request Failed");
@@ -221,9 +316,9 @@
 								<h2>" + element.name + "</h2>										 		 \
 								<span class=\"bottom\"> 														 \
 									<p class=\"category\">" + element.category + "</p> \
-									<p class=\"likes\"><span>" + element.talking_about_count + "</span> Likes</p>" 
+									<p class=\"likes\"><span>" + element.like_count + "/" + element.talking_about_count + "</span> Likes</p>" 
 								+ "</span>"
-								+ "<img onclick=\"like(" + element.like_id + ")\" class=\"like-button\" src=\"static/images/heart.png\"/>\
+								+ "<img onclick=\"like(" + element.like_id + ")\" class=\"like-button\" src=\"images/heart.png\"/>\
 							</div>" )
 			    	});
 			    } catch (e) {

@@ -84,15 +84,23 @@ def user_likes(likes):
     shape = (1, model.item_factors.shape[0])
     return coo_matrix((data, (rows, like_ids)), shape=shape).tocsr()
 
+def likes_count(like):
+    try:
+        return like_counts.iloc[like_counts.keys().get_loc(like) - 1]
+    except KeyError:
+        return 0
+
 def perform_recommendation(likes):
-    return model.recommend(userid=0, user_items=user_likes(likes), recalculate_user=True)
+    return model.recommend(userid=0, user_items=user_likes(likes), recalculate_user=True, N=20)
 
 def text_recommendation(likes):
     return list(map(lambda x: (like_id_to_item(model_id_to_like_id(x[0])), int(round(x[1]*1000))/1000), perform_recommendation(likes)))
 
 confidence = 40
-data = load_data(500)
+data = load_data(50000)
 model = learn()
+like_counts = data['like'].value_counts()
+# print(like_counts.head())
 mapping_data = load_mapping()
 
 # slipknot = 6478112671
